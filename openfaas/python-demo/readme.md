@@ -26,3 +26,13 @@ Make a new Function for this demo.
 ```shell
 faas-cli new --lang python3-http --prefix etclab openfaas-python-demo
 ```
+
+Run the demo 
+```shell
+faas-cli up -f openfaas-python-demo.yml
+```
+
+(this doesn't work right now because `etclab/openfaas-python-demo:latest` doesn't exist)
+```
+ERROR - Could not execute command: [docker push etclab/openfaas-python-demo:latest]
+```
