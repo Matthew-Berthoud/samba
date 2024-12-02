@@ -3,63 +3,63 @@ Simple lightweight faas orchestrator that runs on a single machine
 [repo](https://github.com/openfaas/faasd?tab=readme-ov-file)
 
 
-
 # faasd with multipass
 [video](https://www.youtube.com/watch?v=WX1tZoSXy8E)
 
-Follow [the tutorial](https://github.com/openfaas/faasd/blob/master/docs/MULTIPASS.md) to use multipass. Here's what I did to just use raw qemu, without multipass:
+Follow [the tutorial](https://github.com/openfaas/faasd/blob/master/docs/MULTIPASS.md).
 
-# faasd with qemu
-- cloudinit with ubuntu [tutorial](https://cloudinit.readthedocs.io/en/latest/tutorial/qemu.html)
-- launch cloudinit with qemu [tutorial](https://cloudinit.readthedocs.io/en/latest/howto/launch_qemu.html#launch-qemu)
-
-
-1. Create 20G qemu image
-```shell
-qemu-img create -f qcow2 faasd.img 20G
-```
-
-2. Get a latest cloud-specific Ubuntu LTS release
-```shell
-wget 'https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img'
-```
-
-3. Get the faasd config file
-```shell
-curl -sSLO https://raw.githubusercontent.com/openfaas/faasd/master/cloud-config.txt
-```
-
-4. Generate ssh key if not already done, and put it in the cloud config file in the proper spot
+Generate ssh key if not already done, and put it in the cloud config file in the proper spot
 ```shell
 cd ~
 ssh-keygen
 # hit enter through the prompts
-cat ~/.ssh/id_rsa.pub # or similar, if not ssh
-# now replace the key in cloud-config.txt
+cat ~/.ssh/id_rsa.pub # or similar, if not rsa
 ```
 
-4. Create ISO from the cloud config
+# faasd with just qemu
+__HAVENT GOTTEN THIS WORKING__
+
+- cloudinit with ubuntu [tutorial](https://cloudinit.readthedocs.io/en/latest/tutorial/qemu.html)
+- launch cloudinit with qemu [tutorial](https://cloudinit.readthedocs.io/en/latest/howto/launch_qemu.html#launch-qemu)
+
+Make these files to fill out the genisoimage signature
 ```shell
-genisoimage -output cloud-init.iso -volid cidata -joliet -rock user-data cloud-config.txt
+touch network-config
+touch meta-data
+cat >user-data <<EOF
+#cloud-config
+password: password
+chpasswd:
+  expire: False
+ssh_pwauth: True
+EOF
 ```
 
-Note: if you manually change the ssh key in the `cloud-config.txt`, launch with
+Generate ISO disk. Use the first to do the simple cloud-init example, and use the following to do the openfaas-enabled example.
 ```shell
-multipass launch --name faasd --cloud-init cloud-config.txt
+genisoimage \
+    -output seed.img \
+    -volid cidata -rational-rock -joliet \
+    user-data meta-data network-config
+```
+```shell
+genisoimage \
+    -output seed.img \
+    -volid cidata -rational-rock -joliet \
+    cloud-config.txt
 ```
 
+Download ubuntu image
 ```shell
-multipass info faasd
+wget https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
 ```
 
+Boot with qemu
 ```shell
+qemu-system-x86_64 -m 1024 -net nic -net user \
+    -drive file=jammy-server-cloudimg-amd64.img,index=0,format=qcow2,media=disk \
+    -drive file=seed.img,index=1,media=cdrom \
+    -machine accel=kvm:tcg \
+    -nographic
 ```
 
-```shell
-```
-
-```shell
-```
-
-```shell
-```

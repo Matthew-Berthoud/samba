@@ -1,19 +1,5 @@
+#cloud-config
 password: password
 chpasswd:
   expire: False
 ssh_pwauth: True
-ssh_authorized_keys:
-  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCpXiPaG7xviPQ2Hd5S2p/hsnB6mp2+o7uzFINIO2JdR+VoDXZKCR63skLM+UKL4o2m5RGCzgnI4j/mK7/GJcvCFiem6p4IyyhgJ79sZnAV+gj+95VEL4Lg74jwQ3/w7AyJI7G2iL5i0C1L8OmWsatD7PfO/xoZA4hRGEJclun0sOLaLitUCCr4fL5/uob7I5wm4SqiiWx9IzL0CuHkpJPdsfNkJmL4spxjKybX6YbSE6JToC1jPty9yZFkZDBhljiorlZB852GoZLv8gF9PsyRMG8upRcIY/mqsIQF6A6EHPeja0o3BDrH6crCcqpcwt0xRw1+WLEIPlgObv3TlreGqx19JOTdy9nbAiDajEmNAam/fENCpdQNr+yhYtmBXJZMz5XzQFQO3g02bqexbFUo4YJqz7iQL6ra0rJ1WrLWnqhjphUjUSrlZOTmGpbTxfO+GrYWktZpa40DC1KL/5Py4GLe+tgvoJ3rS4YZO9FEjfGTx3sCuZ1qXegvuVadsBE= mwberthoud@th121-18
-package_update: true
-packages:
- - runc
- - git
-runcmd:
-- curl -sfL https://raw.githubusercontent.com/openfaas/faasd/master/hack/install.sh | bash -s -
-- systemctl status -l containerd --no-pager
-- journalctl -u faasd-provider --no-pager
-- systemctl status -l faasd-provider --no-pager
-- systemctl status -l faasd --no-pager
-- curl -sSLf https://cli.openfaas.com | sh
-- sleep 60 && journalctl -u faasd --no-pager
-- cat /var/lib/faasd/secrets/basic-auth-password | /usr/local/bin/faas-cli login --password-stdin
