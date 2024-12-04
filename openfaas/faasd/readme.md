@@ -4,9 +4,14 @@ Simple lightweight faas orchestrator that runs on a single machine
 
 
 # faasd with multipass
+__SOME PROGRESS, NOT FULLY WORKING__
+
 [video](https://www.youtube.com/watch?v=WX1tZoSXy8E)
 
-Follow [the tutorial](https://github.com/openfaas/faasd/blob/master/docs/MULTIPASS.md).
+First install `faas-cli`
+```shell
+curl -sSL https://cli.openfaas.com | sudo sh
+```
 
 Generate ssh key if not already done, and put it in the cloud config file in the proper spot
 ```shell
@@ -15,6 +20,17 @@ ssh-keygen
 # hit enter through the prompts
 cat ~/.ssh/id_rsa.pub # or similar, if not rsa
 ```
+
+Follow [the tutorial](https://github.com/openfaas/faasd/blob/master/docs/MULTIPASS.md).
+
+- I've gotten everything working up until [this section](https://github.com/openfaas/faasd/blob/master/docs/MULTIPASS.md#try-faasd-openfaas), where it gives this error when I try to log in
+- ( i've tried with https as well, the refusal is unrelated )
+```
+Calling the OpenFaaS server to validate the credentials...
+WARNING! You are not using an encrypted connection to the gateway, consider using HTTPS.
+Cannot connect to OpenFaaS on URL: http://10.92.149.27:8080. Get "http://10.92.149.27:8080/system/functions": dial tcp 10.92.149.27:8080: connect: connection refused
+```
+
 
 # faasd with just qemu
 __HAVENT GOTTEN THIS WORKING__
