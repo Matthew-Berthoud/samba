@@ -35,6 +35,7 @@ bash regitry-credential.sh
 ```bash
 cd samples/functions/async/logs-handler-function
 ```
+- LEFT OFF HERE. Next time: follow the instructions in [this article](https://kubesphere.io/blogs/serverless-way-for-kubernetes-log-alert/) to see the example in action. Probably need to download and familiarize myself with Kubesphere early in that process.
 
 ## Kafka
 - Started looking into Kafka to maybe get a better grasp on why I can't get the above example to work. The [quickstart](https://kafka.apache.org/quickstart) has a helpful high level [video](https://www.youtube.com/watch?v=vHbvbwSEYGo)
