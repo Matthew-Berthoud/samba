@@ -1,0 +1,3 @@
+[submodule "openfunction/samples"]
+	path = openfunction/samples
+	url = https://github.com/OpenFunction/samples.git
