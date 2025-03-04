@@ -3,6 +3,7 @@
 
 ## Kubernetes
 `minikube start`
+- I run into issues whenever I stop and start minikube, since I don't always know how to gracefully stop and start the kubernetes processes within. To remove all pods and namespaces and start fresh, I just run `minikube delete` followed by `minikube start`. Not the greatest solution but it works for now, and keeps the state consistent-ish.
 
 ## Helm
 Helm is the "package manager for kubernetes." You use it to add "charts" (config files, essentially) and repos to a kubernetes project. I installed it on `shs1` with the commands in the "from script" section of [this link](https://helm.sh/docs/intro/install/#from-script).
@@ -14,6 +15,7 @@ You'll have to follow the links in the first link to install the `pack` cli.
 Then once the function is running you'll have to visit it with `curl http://localhost:8080/world` for it to say `Hello, world!`, or whatever other thing you want to say hello to!
 
 ## Async Function Example
+### Setup
 - Click the Go Kafka input and HTTP output binding example on the [Create Async Functions](https://openfunction.dev/docs/getting-started/quickstarts/async-functions/) page
 - [This](https://kubesphere.io/blogs/serverless-way-for-kubernetes-log-alert/) is a more detailed explanation of the example
 - Uses [Kafka](#Kafka)
@@ -27,15 +29,20 @@ kubectl apply -f kafka-server-config.yaml
 ```bash
 kafkacat -L -b kafka-server-kafka-brokers:9092
 ```
+- Note that later when following the article, they name their server `kafka-logs-receiver` so you can't directly copy all commands
 - For the [Registry Credential](https://github.com/OpenFunction/samples/blob/main/Prerequisites.md#registry-credential) section you can just use mine by running the file in this repo
 ```bash
 bash regitry-credential.sh
 ```
-- to do the rest of this tutorial you'll have to be in the correct folder of the samples submodule I put in this repo
+- To do the rest of this tutorial you'll have to be in the correct folder of the samples submodule I put in this repo
 ```bash
 cd samples/functions/async/logs-handler-function
 ```
-- LEFT OFF HERE. Next time: follow the instructions in [this article](https://kubesphere.io/blogs/serverless-way-for-kubernetes-log-alert/) to see the example in action. Probably need to download and familiarize myself with Kubesphere early in that process.
+
+### Kubesphere Article
+- Follow the instructions in [this article](https://kubesphere.io/blogs/serverless-way-for-kubernetes-log-alert/) to see the example in action.
+- STILL WORKING THRU
+
 
 ## Kafka
 - Started looking into Kafka to maybe get a better grasp on why I can't get the above example to work. The [quickstart](https://kafka.apache.org/quickstart) has a helpful high level [video](https://www.youtube.com/watch?v=vHbvbwSEYGo)
