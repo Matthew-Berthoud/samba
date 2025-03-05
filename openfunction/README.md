@@ -9,10 +9,15 @@
 Helm is the "package manager for kubernetes." You use it to add "charts" (config files, essentially) and repos to a kubernetes project. I installed it on `shs1` with the commands in the "from script" section of [this link](https://helm.sh/docs/intro/install/#from-script).
 
 ## Build hello world function in Go
-Follow [these](https://openfunction.dev/docs/concepts/function_build/#build-functions-with-the-pack-cli) and [these](https://github.com/OpenFunction/samples/tree/main/functions/knative/hello-world-go#sample-function-go) instructions, mainly the first link.
-
+Followed and modified [these](https://openfunction.dev/docs/concepts/function_build/#build-functions-with-the-pack-cli) and [these](https://github.com/OpenFunction/samples/tree/main/functions/knative/hello-world-go#sample-function-go) instructions.
 You'll have to follow the links in the first link to install the `pack` cli.
-Then once the function is running you'll have to visit it with `curl http://localhost:8080/world` for it to say `Hello, world!`, or whatever other thing you want to say hello to!
+
+```bash
+cd samples/functions/knative/hello-world-go
+pack build func-helloworld-go --builder openfunction/builder-go:v2.4.0-1.17 --env FUNC_NAME="HelloWorld"  --env FUNC_CLEAR_SOURCE=true
+docker run --rm --env="FUNC_CONTEXT={\"name\":\"HelloWorld\",\"version\":\"v1.0.0\",\"port\":\"8080\",\"runtime\":\"Knative\"}" --env="CONTEXT_MODE=self-host" --name func-helloworld-go -p 8080:8080 func-helloworld-go
+curl http://localhost:8080/world # to say "Hello, world!"
+```
 
 ## Async Function Example
 ### Setup
