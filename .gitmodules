@@ -2,3 +2,6 @@
 	path = openfunction/OpenFunction
 	url = https://github.com/Matthew-Berthoud/OpenFunction.git
     branch = main
+[submodule "openfunction/samples"]
+	path = openfunction/samples
+	url = https://github.com/Matthew-Berthoud/samples.git
