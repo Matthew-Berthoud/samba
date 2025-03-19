@@ -1,4 +1,11 @@
 specVersion: 0.36.0
 name: hello
 runtime: go
+registry: matthewberthoud
+namespace: default
 created: 2025-03-19T12:45:29.845438417-04:00
+build:
+  builder: pack
+deploy:
+  namespace: default
+  image: index.docker.io/matthewberthoud/hello@sha256:099a8655c0a8ff976c9b2c268ead56206cc858c73242d5089cab08053949c5a4
