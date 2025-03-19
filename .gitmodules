@@ -5,6 +5,3 @@
 [submodule "openfunction/samples"]
 	path = openfunction/samples
 	url = https://github.com/Matthew-Berthoud/samples.git
-[submodule "knative/client"]
-	path = knative/client
-	url = https://github.com/knative/client.git
