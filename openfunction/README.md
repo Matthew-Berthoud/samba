@@ -1,6 +1,57 @@
 # OpenFunction
 [openfunction.dev](https://www.openfunction.dev)
 
+_Tue Mar 18_
+
+## Building Openfunction 
+
+Sources:
+- https://kubernetes.io/docs/tutorials/hello-minikube/
+- https://www.docker.com/blog/how-to-use-your-own-registry-2/
+
+I made some changes to the Openfunction Dockerfile.
+I got rid of the chinese GOPROXY stuff since I don't think it's necessary and it was hanging for a while.
+I also got rid of the `-a` flag so that it doesn't disable caching of dependencies.
+I don't think these changes are the source of my difficulties.
+
+Run the following from within the Openfunction directory (forked from their repo)
+```
+docker run -d -p 5000:5000 --name registry registry:latest
+```
+```
+minikube start --insecure-registry localhost:5000
+```
+```
+docker build -t openfunction-local .
+```
+```
+docker tag openfunction-local localhost:5000/openfunction-local
+```
+```
+docker push localhost:5000/openfunction-local
+```
+```
+docker rmi localhost:5000/openfunction-local
+```
+```
+docker pull localhost:5000/openfunction-local
+```
+```
+kubectl create deployment of-node --image=localhost:5000/openfunction-local
+```
+```
+kubectl get deployments
+```
+```
+kubectl get pods
+```
+
+Still have `ImagePullBackOff` status. More debugging to be done.
+
+
+
+_Earlier_
+
 ## Kubernetes
 `minikube start`
 - I run into issues whenever I stop and start minikube, since I don't always know how to gracefully stop and start the kubernetes processes within. To remove all pods and namespaces and start fresh, I just run `minikube delete` followed by `minikube start`. Not the greatest solution but it works for now, and keeps the state consistent-ish.

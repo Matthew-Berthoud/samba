@@ -1,3 +1,6 @@
 [submodule "openfunction/samples"]
 	path = openfunction/samples
 	url = https://github.com/OpenFunction/samples.git
+[submodule "openfunction/OpenFunction"]
+	path = openfunction/OpenFunction
+	url = https://github.com/Matthew-Berthoud/OpenFunction.git
