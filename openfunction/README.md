@@ -1,7 +1,10 @@
 # OpenFunction
 [openfunction.dev](https://www.openfunction.dev)
 
-_Wed Mar 19_
+## transitioning to trying knative
+I dont think this is going to work. Trying knative functions / serving
+
+
 ## Async pubsub example
 - __Make sure you use my fork, not the main repo__
 - https://github.com/Matthew-Berthoud/samples/tree/main/functions/async/pubsub
@@ -36,8 +39,22 @@ cd ..
 kubectl apply -f subscriber/function-subscriber.yaml
 ```
 
-_Tue Mar 18_
 ## Building Openfunction 
+
+### Following Development Workflow
+- Here is my version of [this](https://github.com/OpenFunction/OpenFunction/blob/main/docs/development/development-workflow.md)
+```
+export working_dir=$(go env GOPATH)/src/openfunction.io
+export user=Matthew-Berthoud
+mkdir -p $working_dir
+cd $working_dir
+git clone https://github.com/$(echo $user)/OpenFunction.git
+cd $working_dir/OpenFunction
+git remote add upstream https://github.com/OpenFunction/OpenFunction.git
+```
+
+
+### Initial Attempt
 
 Sources:
 - https://kubernetes.io/docs/tutorials/hello-minikube/
@@ -82,9 +99,11 @@ kubectl get pods
 
 Still have `ImagePullBackOff` status. More debugging to be done.
 
+__NOTE:__ use personal image repo and then try the stuff at the bottom of the Quickstart
 
 
 _Earlier_
+
 
 ## Kubernetes
 `minikube start`
