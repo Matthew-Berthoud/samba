@@ -3,12 +3,13 @@
 
 _Wed Mar 19_
 ## Async pubsub example
-- https://github.com/OpenFunction/samples/tree/main/functions/async/pubsub
-- The three [prereq](https://github.com/OpenFunction/samples/tree/main/functions/async/pubsub#prerequisites)
+- __Make sure you use my fork, not the main repo__
+- https://github.com/Matthew-Berthoud/samples/tree/main/functions/async/pubsub
+- The three [prereq](https://github.com/Matthew-Berthoud/samples/tree/main/functions/async/pubsub#prerequisites)
 links are very similar / the same to the [async function example](#Async Function Example) section I tried earlier.
 See that for the files I made to shortcut the process.
 In short,
-    1. do the helm stuff for openfunction
+    1. Do the helm stuff for openfunction in the openfunction namespaceopenfunctiondev
     2. Do the helm stuff for kafka, then do  `kubectl apply -f kafka-server-config.yaml` 
     3. run `bash registry-credential.sh` to get the local registry configured
 - Run the rest of the commands from the instructions from within the `samples/functions/async/pubsub` directory
@@ -17,16 +18,25 @@ In short,
 cd producer
 ```
 ```
+go mod tidy
+```
+```
 docker build -t matthewberthoud/v1beta1-autoscaling-producer:latest -f Dockerfile.producer .
 ```
 ```
 docker push matthewberthoud/v1beta1-autoscaling-producer:latest
 ```
-
-
+```
+kubectl apply -f deploy.yaml
+```
+```
+cd ..
+```
+```
+kubectl apply -f subscriber/function-subscriber.yaml
+```
 
 _Tue Mar 18_
-
 ## Building Openfunction 
 
 Sources:
