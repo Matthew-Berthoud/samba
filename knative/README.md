@@ -18,8 +18,9 @@ func run
 - If you set that environment variable you can omit all the `--registry=<your-docker-username>` arguments
 - If you run into issues with `func deploy`, try `docker logout && docker login`, and then try again
 - Before starting on [Deploying a Knative Service](https://knative.dev/docs/getting-started/first-service/) you should run `func delete hello` since the next exmample function will also be called `hello`
-- more here...
-
+- __Can't get port forwarding to work__ for [this dashboard](https://knative.dev/docs/getting-started/first-source/#examining-the-cloudevents-player) because of javascript errors I think
+- Next little bit doesn't work either for same reason
+- Clean up worked fine. DONE
 
 ### End to End
 Refer to these bulletpoints if you get stuck on the [end-to-end tutorial](https://knative.dev/docs/bookstore/page-0/welcome-knative-bookstore-tutorial/)
