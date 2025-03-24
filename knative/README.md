@@ -1,6 +1,19 @@
 # Knative
 Knative has FaaS stuff. Woohoo!
 
+## [Development](https://github.com/etclab/serving/DEVELOPMENT.md)
+These steps are required to get the local registry working.
+The rest of [these instructions](https://github.com/etclab/serving/DEVELOPMENT.md) worked and got me set up locally on Mac.
+```
+minikube start
+# https://minikube.sigs.k8s.io/docs/handbook/registry/
+minikube addons enable registry
+# I ran the following but it didn't work by itself, and then the other commands made things work so I'm not sure if it's necessary
+# docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
+kubectl port-forward --namespace kube-system service/registry 5000:80
+eval $(minikube docker-env)
+```
+
 ## [Tutorials](https://knative.dev/docs/getting-started/tutorial/)
 
 ### Quickstart
