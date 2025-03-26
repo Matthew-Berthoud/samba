@@ -2,7 +2,8 @@
 Knative has FaaS stuff. Woohoo!
 
 ## [Autoscale Sample App](https://knative.dev/docs/serving/autoscaling/autoscale-go/)
-
+I did this tutorial, but instead of installing and running Knative Serving from yaml files, I built it from source as per the Development section.
+The sample app tutorial mostly works for this, but in step 1, where it tells you to install Serving from yaml, take that link and skip to [Install a networking layer](https://knative.dev/docs/install/yaml-install/serving/install-serving-with-yaml/#install-a-networking-layer).
 
 ## Where do we code?
 [description of scaling architecture](https://knative.dev/docs/serving/request-flow/#scale-from-zero)
