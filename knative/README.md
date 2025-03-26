@@ -2,11 +2,14 @@
 Knative has FaaS stuff. Woohoo!
 
 ## [Autoscale Sample App](https://knative.dev/docs/serving/autoscaling/autoscale-go/)
-I did this tutorial, but instead of installing and running Knative Serving from yaml files, I built it from source as per the Development section.
-The sample app tutorial mostly works for this, but in step 1, where it tells you to install Serving from yaml, take that link and skip to [Install a networking layer](https://knative.dev/docs/install/yaml-install/serving/install-serving-with-yaml/#install-a-networking-layer).
+Instead of doing the first step and installing serving from yaml, you can start by doing the Development tutorial
+instead including installing Kourier as a network layer.
+When you get the running this command: `kubectl get ksvc autoscale-go`, if it shows a URL that ends in `.local` instead of `.sslip.io`, run `minikube tunnel`.
+This is another command, like the docker port forward one in Development, that you'll need to keep a terminal open for so it can run in the foreground.
 
 ## Where do we code?
-[description of scaling architecture](https://knative.dev/docs/serving/request-flow/#scale-from-zero)
+- [description of scaling architecture](https://knative.dev/docs/serving/request-flow/#scale-from-zero)
+- [video, where second half explains custom autoscaling](https://www.youtube.com/watch?v=OPSIPr-Cybs)
 
 ## [Development](https://github.com/etclab/serving/DEVELOPMENT.md)
 These steps are required to get the local registry working.
@@ -19,6 +22,7 @@ minikube addons enable registry
 kubectl port-forward --namespace kube-system service/registry 5000:80
 eval $(minikube docker-env)
 ```
+Don't forget to install Kourier as a network layer
 
 ## [Knative Overview Tutorials](https://knative.dev/docs/getting-started/tutorial/)
 
@@ -42,7 +46,6 @@ func run
 - Clean up worked fine. DONE
 
 ### End to End
-Refer to these bulletpoints if you get stuck on the [end-to-end tutorial](https://knative.dev/docs/bookstore/page-0/welcome-knative-bookstore-tutorial/)
+I haven't done the [end-to-end tutorial](https://knative.dev/docs/bookstore/page-0/welcome-knative-bookstore-tutorial/)
 
-- coming soon
 
