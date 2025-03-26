@@ -1,6 +1,9 @@
 # Knative
 Knative has FaaS stuff. Woohoo!
 
+## Where do we code?
+[description of scaling architecture](https://knative.dev/docs/serving/request-flow/#scale-from-zero)
+
 ## [Development](https://github.com/etclab/serving/DEVELOPMENT.md)
 These steps are required to get the local registry working.
 The rest of [these instructions](https://github.com/etclab/serving/DEVELOPMENT.md) worked and got me set up locally on Mac.
@@ -14,7 +17,7 @@ kubectl port-forward --namespace kube-system service/registry 5000:80
 eval $(minikube docker-env)
 ```
 
-## [Tutorials](https://knative.dev/docs/getting-started/tutorial/)
+## [Knative Overview Tutorials](https://knative.dev/docs/getting-started/tutorial/)
 
 ### Quickstart
 Refer to these bulletpoints if you get stuck on the [quickstart tutorial](https://knative.dev/docs/getting-started/)
