@@ -8,8 +8,16 @@ When you get the running this command: `kubectl get ksvc autoscale-go`, if it sh
 This is another command, like the docker port forward one in Development, that you'll need to keep a terminal open for so it can run in the foreground.
 
 ## Where do we code?
+- Current thoughts:
+    - Client: queue-proxy sidecars to the functions will be the "client" for proxy-reencryption. They will generate a re-encryption key on startup and send it to the "server".
+    - Server: I'm still a little uncertain on what component exactly launches new pods for scaling.
+      It's something in the "deployment", but I'm getting worried that it's some underlying kubernetes thing that we'd have to modify.
+- image on [this page](https://knative.dev/docs/serving/request-flow/) is helpful conceptually
 - [description of scaling architecture](https://knative.dev/docs/serving/request-flow/#scale-from-zero)
+- It looks like the autoscaler outputs just a number of pods to scale to, and actual pod launching is accomplished by the Deployment, within the revision. See [this page's](https://github.com/knative/serving/blob/main/docs/scaling/SYSTEM.md) diagrams
+- Some of [this](https://github.com/knative/serving/blob/main/docs/encryption/knative-encryption.md) encryption stuff might be useful
 - [video, where second half explains custom autoscaling](https://www.youtube.com/watch?v=OPSIPr-Cybs)
+    - talks about [this customization](https://knative.dev/docs/serving/autoscaling/autoscale-go/#customization) which won't be enough for us, we'll have to modify whatever actually launches the new containers
 
 ## [Development](https://github.com/etclab/serving/DEVELOPMENT.md)
 These steps are required to get the local registry working.
