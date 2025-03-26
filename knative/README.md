@@ -1,6 +1,9 @@
 # Knative
 Knative has FaaS stuff. Woohoo!
 
+## [Autoscale Sample App](https://knative.dev/docs/serving/autoscaling/autoscale-go/)
+
+
 ## Where do we code?
 [description of scaling architecture](https://knative.dev/docs/serving/request-flow/#scale-from-zero)
 
@@ -11,8 +14,7 @@ The rest of [these instructions](https://github.com/etclab/serving/DEVELOPMENT.m
 minikube start
 # https://minikube.sigs.k8s.io/docs/handbook/registry/
 minikube addons enable registry
-# I ran the following but it didn't work by itself, and then the other commands made things work so I'm not sure if it's necessary
-# docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000"
+# The following you'll have to run in another terminal pane, unless you want it in the background
 kubectl port-forward --namespace kube-system service/registry 5000:80
 eval $(minikube docker-env)
 ```
