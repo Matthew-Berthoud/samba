@@ -1,11 +1,53 @@
 # Knative
 Knative has FaaS stuff. Woohoo!
 
+## [Development](https://github.com/etclab/serving/DEVELOPMENT.md)
+
+Run this in one terminal, leaving it open/running
+```bash
+# Set this environment variable one way or another
+echo "export KO_DOCKER_REPO='ko.local'" >> ~/.bashrc
+minikube start
+minikube addons enable registry
+eval $(minikube -p minikube docker-env)
+kubectl port-forward --namespace kube-system service/registry 5000:80
+```
+In another terminal,
+```bash
+eval $(minikube -p minikube docker-env)
+minikube tunnel
+```
+In another terminal, from within the `serving` repo directory:
+```bash
+eval $(minikube -p minikube docker-env)
+kubectl apply -f ./third_party/cert-manager-latest/cert-manager.yaml
+kubectl wait --for=condition=Established --all crd
+kubectl wait --for=condition=Available -n cert-manager --all deployments
+ko apply --selector knative.dev/crd-install=true -Rf config/core/
+kubectl wait --for=condition=Established --all crd
+ko apply -Rf config/core/
+ko delete -f config/post-install/default-domain.yaml --ignore-not-found
+ko apply -f config/post-install/default-domain.yaml
+kubectl apply -f ./third_party/kourier-latest/kourier.yaml
+kubectl patch configmap/config-network \
+  -n knative-serving \
+  --type merge \
+  -p '{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}'
+```
+You may be prompted to enter your computer password in the `minikube tunnel` terminal.
+Look at [these instructions](https://github.com/etclab/serving/DEVELOPMENT.md) if stuck.
+
 ## [Autoscale Sample App](https://knative.dev/docs/serving/autoscaling/autoscale-go/)
-Instead of doing the first step and installing serving from yaml, you can start by doing the Development tutorial
-instead including installing Kourier as a network layer.
-When you get the running this command: `kubectl get ksvc autoscale-go`, if it shows a URL that ends in `.local` instead of `.sslip.io`, run `minikube tunnel`.
-This is another command, like the docker port forward one in Development, that you'll need to keep a terminal open for so it can run in the foreground.
+Instead of doing the first step and installing serving from yaml, you can start by doing the Development tutorial above.
+Then, clone the knative-docs repo, run this from within it
+```bash
+kubectl apply -f docs/serving/autoscaling/autoscale-go/service.yaml
+kubectl get ksvc autoscale-go
+```
+This should show a URL that ends in `.sslip.io`, instead of `.local`.
+THIS MAY TAKE A BIT TO REGISTER THOUGH, so be patient and run the command a few times.
+If it doesn't work, you probably didn't run `minikube tunnel`.
+This has to be running before the "default domain" yaml gets run in the Development setup above.
 
 ## Where do we code?
 - Current thoughts:
@@ -18,19 +60,6 @@ This is another command, like the docker port forward one in Development, that y
 - Some of [this](https://github.com/knative/serving/blob/main/docs/encryption/knative-encryption.md) encryption stuff might be useful
 - [video, where second half explains custom autoscaling](https://www.youtube.com/watch?v=OPSIPr-Cybs)
     - talks about [this customization](https://knative.dev/docs/serving/autoscaling/autoscale-go/#customization) which won't be enough for us, we'll have to modify whatever actually launches the new containers
-
-## [Development](https://github.com/etclab/serving/DEVELOPMENT.md)
-These steps are required to get the local registry working.
-The rest of [these instructions](https://github.com/etclab/serving/DEVELOPMENT.md) worked and got me set up locally on Mac.
-```
-minikube start
-# https://minikube.sigs.k8s.io/docs/handbook/registry/
-minikube addons enable registry
-# The following you'll have to run in another terminal pane, unless you want it in the background
-kubectl port-forward --namespace kube-system service/registry 5000:80
-eval $(minikube docker-env)
-```
-Don't forget to install Kourier as a network layer
 
 ## [Knative Overview Tutorials](https://knative.dev/docs/getting-started/tutorial/)
 
