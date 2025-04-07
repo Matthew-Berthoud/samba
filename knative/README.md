@@ -67,6 +67,19 @@ hey -z 60s -c 5 \
   "http://autoscale-go.default.127.0.0.1.sslip.io?bloat=1000"
 ```
 
+## Logging
+To see logs in one place, I tried to use [Fluent Bit](https://knative.dev/docs/serving/observability/logging/collecting-logs/#procedure). Some of their instructions are out of date.
+
+I ran the initial kubernetes container config with the modified version I have in this repo, that doesn't use a deprecated nginx version.
+```bash
+kubectl apply -f ./log-collector.yaml
+```
+
+Didn't seem to work tho, just gave an nginx Not Found screen.
+
+I'm trying to chang the code and rebuild and it's not working, not sure why.
+
+
 ## Where do we code?
 - Current thoughts:
     - Client: queue-proxy sidecars to the functions will be the "client" for proxy-reencryption. They will generate a re-encryption key on startup and send it to the "server".
