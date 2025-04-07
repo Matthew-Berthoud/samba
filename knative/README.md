@@ -49,6 +49,24 @@ THIS MAY TAKE A BIT TO REGISTER THOUGH, so be patient and run the command a few 
 If it doesn't work, you probably didn't run `minikube tunnel`.
 This has to be running before the "default domain" yaml gets run in the Development setup above.
 
+Here are all the commands they run in the tutorial, with IP `127.0.0.1` instead of `1.2.3.4`:
+```bash
+curl "http://autoscale-go.default.127.0.0.1.sslip.io?sleep=100&prime=10000&bloat=5"
+hey -z 30s -c 50 \
+  "http://autoscale-go.default.127.0.0.1.sslip.io?sleep=100&prime=10000&bloat=5" \
+  && kubectl get pods
+hey -z 60s -c 100 \
+  "http://autoscale-go.default.127.0.0.1.sslip.io?sleep=100&prime=10000&bloat=5"
+hey -z 60s -q 100 \
+  "http://autoscale-go.default.127.0.0.1.sslip.io?sleep=10"
+hey -z 60s -q 100 \
+  "http://autoscale-go.default.127.0.0.1.sslip.io?sleep=1000"
+hey -z 60s -q 100 \
+  "http://autoscale-go.default.127.0.0.1.sslip.io?prime=40000000"
+hey -z 60s -c 5 \
+  "http://autoscale-go.default.127.0.0.1.sslip.io?bloat=1000"
+```
+
 ## Where do we code?
 - Current thoughts:
     - Client: queue-proxy sidecars to the functions will be the "client" for proxy-reencryption. They will generate a re-encryption key on startup and send it to the "server".
