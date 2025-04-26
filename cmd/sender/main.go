@@ -21,8 +21,12 @@ func main() {
 	// request function leader's public key from proxy
 	alicePk := samba.FetchPublicKey(proxyId, functionId)
 
-	req := samba.PREEncrypt(pp, alicePk, plaintext, functionId)
-	resp, err := samba.SendMessage(&req, proxyId)
+	req, err := samba.PREEncrypt(pp, alicePk, plaintext, functionId)
+	if err != nil {
+		log.Fatalf("Proxy re-encryption failed: %v", err)
+	}
+
+	resp, err := samba.SendMessage(req, proxyId)
 	if err != nil {
 		log.Fatalf("Sending to proxy failed: %v", err)
 	}

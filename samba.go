@@ -10,9 +10,9 @@ type FunctionId uint
 type SambaMessage struct {
 	Target        FunctionId            `json:"target"`
 	IsReEncrypted bool                  `json:"is_re_encrypted"`
-	WrappedKey1   Ciphertext1Serialized `json:"wrapped_key1,omitempty"` // Encrypted bls.Gt that derives to AES key
-	WrappedKey2   Ciphertext2Serialized `json:"wrapped_key2,omitempty"` // Re-encrypted bls.Gt that derives to AES key
-	Ciphertext    []byte                `json:"ciphertext"`             // plaintext (just a string for now) encrypted under the AES key
+	WrappedKey1   Ciphertext1Serialized `json:"wrapped_key1"` // Encrypted bls.Gt that derives to AES key
+	WrappedKey2   Ciphertext2Serialized `json:"wrapped_key2"` // Re-encrypted bls.Gt that derives to AES key
+	Ciphertext    []byte                `json:"ciphertext"`   // plaintext (just a string for now) encrypted under the AES key
 }
 
 type InstanceKeys struct {

@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strings"
 
-	bls "github.com/cloudflare/circl/ecc/bls12381"
 	"github.com/etclab/pre"
 )
 
@@ -107,31 +106,10 @@ func HandleMessage(w http.ResponseWriter, req *http.Request, keyPair *pre.KeyPai
 		return
 	}
 
-	var gt *bls.Gt
-	if m.IsReEncrypted {
-		ct2, err := DeSerializeCiphertext2(m.WrappedKey2)
-		if err != nil {
-			http.Error(w, "Failed to deserialize Ciphertext2", http.StatusBadRequest)
-			log.Printf("Failed to deserialize Ciphertext2: %v", err)
-			return
-		}
-		log.Printf("Decrypting with method 2, with re-encryption")
-		gt = pre.Decrypt2(pp, &ct2, keyPair.SK)
-	} else {
-		ct1, err := DeSerializeCiphertext1(m.WrappedKey1)
-		if err != nil {
-			http.Error(w, "Failed to deserialize Ciphertext1", http.StatusBadRequest)
-			log.Printf("Failed to deserialize Ciphertext1: %v", err)
-			return
-		}
-		log.Printf("Decrypting with method 1, without re-encryption")
-		gt = pre.Decrypt1(pp, &ct1, keyPair.SK)
-	}
-	key := pre.KdfGtToAes256(gt)
-	plaintext, err := AESGCMDecrypt(key, m.Ciphertext)
+	plaintext, err := PREDecrypt(&m)
 	if err != nil {
-		http.Error(w, "Error performing AES Decryption: %v", http.StatusInternalServerError)
-		log.Printf("Error performing AES Decryption: %v", err)
+		log.Printf("Failed to decrypt message: %v", err)
+		http.Error(w, "Failed to decrypt message", http.StatusInternalServerError)
 	}
 
 	result := strings.ToUpper(string(plaintext))
