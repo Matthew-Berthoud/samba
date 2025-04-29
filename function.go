@@ -10,10 +10,13 @@ import (
 	"github.com/etclab/pre"
 )
 
-var keyPair *pre.KeyPair
-var publicParams *pre.PublicParams
+type SambaInstance struct {
+	id InstanceId
+	kp *pre.KeyPair
+	pp *pre.PublicParams
+}
 
-func genReEncryptionKey(w http.ResponseWriter, req *http.Request) {
+func (s *SambaInstance) genReEncryptionKey(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -36,7 +39,7 @@ func genReEncryptionKey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rkAB := pre.ReEncryptionKeyGen(publicParams, keyPair.SK, &pk)
+	rkAB := pre.ReEncryptionKeyGen(s.pp, s.kp.SK, &pk)
 	rks := SerializeReEncryptionKey(*rkAB)
 	response := ReEncryptionKeyMessage{
 		InstanceId:                rkReq.InstanceId,
@@ -49,24 +52,26 @@ func genReEncryptionKey(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func handleMessage(w http.ResponseWriter, req *http.Request) {
-	HandleMessage(w, req, keyPair, publicParams)
+func (s *SambaInstance) handleMessage(w http.ResponseWriter, req *http.Request) {
+	HandleMessage(w, req, s.kp, s.pp)
 }
 
-func port(id InstanceId) string {
+func (s *SambaInstance) port() string {
 	re := regexp.MustCompile(`:\d+`)
-	return re.FindString(string(id))
+	return re.FindString(string(s.id))
 }
 
-func BootFunction(selfId, proxyId InstanceId) {
-	publicParams = FetchPublicParams(proxyId)
-	keyPair = pre.KeyGen(publicParams)
-	RegisterPublicKey(proxyId, selfId, keyPair.PK)
+func (s *SambaInstance) Boot(selfId, proxyId InstanceId) {
+	s.id = selfId
+	s.pp = FetchPublicParams(proxyId)
+	s.kp = pre.KeyGen(s.pp)
 
-	http.HandleFunc("/requestReEncryptionKey", genReEncryptionKey)
-	http.HandleFunc("/message", handleMessage)
+	RegisterPublicKey(proxyId, selfId, s.kp.PK)
 
-	port := port(selfId)
+	http.HandleFunc("/requestReEncryptionKey", s.genReEncryptionKey)
+	http.HandleFunc("/message", s.handleMessage)
+
+	port := s.port()
 	log.Println("Alice service running on " + port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }

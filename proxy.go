@@ -13,12 +13,14 @@ import (
 	"github.com/etclab/pre"
 )
 
-var pp *pre.PublicParams = pre.NewPublicParams()
-var functionLeaders = make(map[FunctionId]InstanceId)
-var keys = make(map[InstanceId]InstanceKeys)
-var instances []InstanceId
+type SambaProxy struct {
+	pp              *pre.PublicParams
+	instances       []InstanceId
+	keys            map[InstanceId]InstanceKeys
+	functionLeaders map[FunctionId]InstanceId
+}
 
-func recvPublicKey(w http.ResponseWriter, req *http.Request) {
+func (s *SambaProxy) recvPublicKey(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	var pks PublicKeySerialized
@@ -38,21 +40,21 @@ func recvPublicKey(w http.ResponseWriter, req *http.Request) {
 
 	queries := req.URL.Query()
 	instanceId := InstanceId(queries.Get("instanceId"))
-	setPublicKey(instanceId, pk)
+	s.setPublicKey(instanceId, pk)
 	log.Printf("Successfully storing public key for instanceId: %s", instanceId)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func setPublicKey(instanceId InstanceId, pk pre.PublicKey) {
-	keys[instanceId] = InstanceKeys{
+func (s *SambaProxy) setPublicKey(instanceId InstanceId, pk pre.PublicKey) {
+	s.keys[instanceId] = InstanceKeys{
 		PublicKey:       pk,
-		ReEncryptionKey: keys[instanceId].ReEncryptionKey, // Preserve existing re-encryption key if resetting
+		ReEncryptionKey: s.keys[instanceId].ReEncryptionKey, // Preserve existing re-encryption key if resetting
 	}
 }
 
-func sendPublicParams(w http.ResponseWriter, req *http.Request) {
-	pps, err := SerializePublicParams(*pp)
+func (s *SambaProxy) sendPublicParams(w http.ResponseWriter, req *http.Request) {
+	pps, err := SerializePublicParams(*s.pp)
 	if err != nil {
 		http.Error(w, "Failed to serialize fields in public parameters", http.StatusInternalServerError)
 		log.Printf("Failed to serialize fields in public parameters")
@@ -67,12 +69,12 @@ func sendPublicParams(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func getReEncryptionKey(a, b InstanceId) (pre.ReEncryptionKey, error) {
-	if keys[b].ReEncryptionKey != (pre.ReEncryptionKey{}) {
-		return keys[b].ReEncryptionKey, nil
+func (s *SambaProxy) getReEncryptionKey(a, b InstanceId) (pre.ReEncryptionKey, error) {
+	if s.keys[b].ReEncryptionKey != (pre.ReEncryptionKey{}) {
+		return s.keys[b].ReEncryptionKey, nil
 	}
 
-	pks := SerializePublicKey(keys[b].PublicKey)
+	pks := SerializePublicKey(s.keys[b].PublicKey)
 
 	req := ReEncryptionKeyRequest{
 		InstanceId:         b,
@@ -103,32 +105,32 @@ func getReEncryptionKey(a, b InstanceId) (pre.ReEncryptionKey, error) {
 		return pre.ReEncryptionKey{}, err
 	}
 
-	instanceKeys := keys[rkMsg.InstanceId]
+	instanceKeys := s.keys[rkMsg.InstanceId]
 	instanceKeys.ReEncryptionKey = rk
-	keys[rkMsg.InstanceId] = instanceKeys
+	s.keys[rkMsg.InstanceId] = instanceKeys
 	return rk, nil
 }
 
-func getOrSetLeader(functionId FunctionId) (InstanceId, error) {
+func (s *SambaProxy) getOrSetLeader(functionId FunctionId) (InstanceId, error) {
 	if functionId == 0 {
 		return "", fmt.Errorf("function ID cannot be 0")
 	}
-	if functionLeaders[functionId] == "" {
+	if s.functionLeaders[functionId] == "" {
 		// in the real implementation there would be some better way to select a leader
-		functionLeaders[functionId] = instances[0]
+		s.functionLeaders[functionId] = s.instances[0]
 		log.Println("setting alice to function leader")
 	}
-	leaderId := functionLeaders[functionId]
+	leaderId := s.functionLeaders[functionId]
 	return leaderId, nil
 }
 
-func getAvailabileInstance(functionId FunctionId) InstanceId {
+func (s *SambaProxy) getAvailabileInstance(functionId FunctionId) InstanceId {
 	//return instances[0] // ALICE
-	return instances[1] // BOB
+	return s.instances[1] // BOB
 }
 
-func reEncrypt(m1 *SambaMessage, leaderId, instanceId InstanceId) (*SambaMessage, error) {
-	rkAB, err := getReEncryptionKey(leaderId, instanceId)
+func (s *SambaProxy) reEncrypt(m1 *SambaMessage, leaderId, instanceId InstanceId) (*SambaMessage, error) {
+	rkAB, err := s.getReEncryptionKey(leaderId, instanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +140,7 @@ func reEncrypt(m1 *SambaMessage, leaderId, instanceId InstanceId) (*SambaMessage
 		return nil, err
 	}
 
-	ct2 := pre.ReEncrypt(pp, &rkAB, &ct1)
+	ct2 := pre.ReEncrypt(s.pp, &rkAB, &ct1)
 
 	wk2, err := SerializeCiphertext2(*ct2)
 	if err != nil {
@@ -155,7 +157,7 @@ func reEncrypt(m1 *SambaMessage, leaderId, instanceId InstanceId) (*SambaMessage
 	return &m2, nil
 }
 
-func recvMessage(w http.ResponseWriter, req *http.Request) {
+func (s *SambaProxy) recvMessage(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -171,16 +173,16 @@ func recvMessage(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	leaderId, err := getOrSetLeader(m.Target)
+	leaderId, err := s.getOrSetLeader(m.Target)
 	if err != nil {
 		http.Error(w, "failed to get or set leader", http.StatusInternalServerError)
 		log.Printf("failed to get or set leader: %v", err)
 		return
 	}
 
-	instanceId := getAvailabileInstance(m.Target)
+	instanceId := s.getAvailabileInstance(m.Target)
 	if instanceId != leaderId {
-		m2, err := reEncrypt(&m, leaderId, instanceId)
+		m2, err := s.reEncrypt(&m, leaderId, instanceId)
 		if err != nil {
 			http.Error(w, "reEncryption failed", http.StatusInternalServerError)
 			log.Printf("reEncryption failed: %v", err)
@@ -203,7 +205,7 @@ func recvMessage(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func handlePublicKeyRequest(w http.ResponseWriter, req *http.Request) {
+func (s *SambaProxy) handlePublicKeyRequest(w http.ResponseWriter, req *http.Request) {
 	queries := req.URL.Query()
 	functionId, err := strconv.ParseUint(queries.Get("functionId"), 10, 64)
 	if err != nil {
@@ -211,14 +213,14 @@ func handlePublicKeyRequest(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	leaderId, err := getOrSetLeader(FunctionId(functionId))
+	leaderId, err := s.getOrSetLeader(FunctionId(functionId))
 	if err != nil {
 		http.Error(w, "Could not get or set leader: %v", http.StatusInternalServerError)
 		log.Printf("Could not get or set leader: %v", err)
 		return
 	}
 
-	leaderKeys, exists := keys[leaderId]
+	leaderKeys, exists := s.keys[leaderId]
 	if !exists {
 		http.Error(w, "Function leader has no public key", http.StatusInternalServerError)
 		log.Printf("Function leader has no public key for leaderId %s", leaderId)
@@ -240,12 +242,16 @@ func handlePublicKeyRequest(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func BootProxy(instanceIds []InstanceId) {
-	instances = instanceIds
-	http.HandleFunc("/publicParams", sendPublicParams)
-	http.HandleFunc("/registerPublicKey", recvPublicKey)
-	http.HandleFunc("/publicKey", handlePublicKeyRequest)
-	http.HandleFunc("/message", recvMessage)
+func (s *SambaProxy) Boot(instanceIds []InstanceId) {
+	s.pp = pre.NewPublicParams()
+	s.instances = instanceIds
+	s.functionLeaders = make(map[FunctionId]InstanceId)
+	s.keys = make(map[InstanceId]InstanceKeys)
+
+	http.HandleFunc("/publicParams", s.sendPublicParams)
+	http.HandleFunc("/registerPublicKey", s.recvPublicKey)
+	http.HandleFunc("/publicKey", s.handlePublicKeyRequest)
+	http.HandleFunc("/message", s.recvMessage)
 	log.Println("Proxy service running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

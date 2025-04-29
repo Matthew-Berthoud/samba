@@ -24,7 +24,7 @@ func PREEncrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []byte, funct
 	}, nil
 }
 
-func PREDecrypt(m *SambaMessage) ([]byte, error) {
+func PREDecrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessage) ([]byte, error) {
 	var gt *bls.Gt
 	if m.IsReEncrypted {
 		ct2, err := DeSerializeCiphertext2(m.WrappedKey2)
@@ -32,14 +32,14 @@ func PREDecrypt(m *SambaMessage) ([]byte, error) {
 			return nil, err
 		}
 		log.Printf("Decrypting with method 2, with re-encryption")
-		gt = pre.Decrypt2(pp, &ct2, keyPair.SK)
+		gt = pre.Decrypt2(pp, &ct2, sk)
 	} else {
 		ct1, err := DeSerializeCiphertext1(m.WrappedKey1)
 		if err != nil {
 			return nil, err
 		}
 		log.Printf("Decrypting with method 1, without re-encryption")
-		gt = pre.Decrypt1(pp, &ct1, keyPair.SK)
+		gt = pre.Decrypt1(pp, &ct1, sk)
 	}
 	key := pre.KdfGtToAes256(gt)
 	plaintext, err := AESGCMDecrypt(key, m.Ciphertext)

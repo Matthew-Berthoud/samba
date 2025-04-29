@@ -90,7 +90,7 @@ func SendMessage(m *SambaMessage, instanceId InstanceId) (response *http.Respons
 	return resp, nil
 }
 
-func HandleMessage(w http.ResponseWriter, req *http.Request, keyPair *pre.KeyPair, pp *pre.PublicParams) {
+func HandleMessage(w http.ResponseWriter, req *http.Request, kp *pre.KeyPair, pp *pre.PublicParams) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -106,7 +106,7 @@ func HandleMessage(w http.ResponseWriter, req *http.Request, keyPair *pre.KeyPai
 		return
 	}
 
-	plaintext, err := PREDecrypt(&m)
+	plaintext, err := PREDecrypt(pp, kp.SK, &m)
 	if err != nil {
 		log.Printf("Failed to decrypt message: %v", err)
 		http.Error(w, "Failed to decrypt message", http.StatusInternalServerError)
