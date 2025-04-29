@@ -9,19 +9,19 @@ import (
 	"github.com/etclab/samba"
 )
 
+const FUNCTION_ID samba.FunctionId = 123
+
 func main() {
 	var proxyId samba.InstanceId = "http://localhost:8080"
-	var functionId samba.FunctionId = 123
-
 	plaintext := []byte("Hello, World!")
 
 	// request public params from proxy
 	pp := samba.FetchPublicParams(proxyId)
 
 	// request function leader's public key from proxy
-	alicePk := samba.FetchPublicKey(proxyId, functionId)
+	alicePk := samba.FetchPublicKey(proxyId, FUNCTION_ID)
 
-	req, err := samba.PREEncrypt(pp, alicePk, plaintext, functionId)
+	req, err := samba.Encrypt(pp, alicePk, plaintext, FUNCTION_ID)
 	if err != nil {
 		log.Fatalf("Proxy re-encryption failed: %v", err)
 	}

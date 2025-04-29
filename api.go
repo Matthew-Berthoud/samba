@@ -41,26 +41,27 @@ func fetch[T any](fullUrl string) T {
 func FetchPublicParams(proxyId InstanceId) *pre.PublicParams {
 	fullUrl := fmt.Sprintf("%s/publicParams", proxyId)
 	m := fetch[PublicParamsSerialized](fullUrl)
-	pp, err := DeSerializePublicParams(m)
+	pp, err := m.DeSerialize()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to deserialize public params: %v", err))
 	}
-	return &pp
+	return pp
 }
 
 func FetchPublicKey(proxyId InstanceId, functionId FunctionId) *pre.PublicKey {
 	fullUrl := fmt.Sprintf("%s/publicKey?functionId=%d", proxyId, functionId)
 	m := fetch[PublicKeySerialized](fullUrl)
-	pk, err := DeSerializePublicKey(m)
+	pk, err := m.DeSerialize()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to deserialize public key: %v", err))
 	}
-	return &pk
+	return pk
 }
 
 func RegisterPublicKey(proxyId, instanceId InstanceId, pk *pre.PublicKey) {
 	fullUrl := fmt.Sprintf("%s/registerPublicKey?instanceId=%s", proxyId, instanceId)
-	pks := SerializePublicKey(*pk)
+	pks := new(PublicKeySerialized)
+	pks.Serialize(pk)
 	body, err := json.Marshal(pks)
 	if err != nil {
 		log.Fatalf("Failed to marshal serialized public key: %v", err)
@@ -106,7 +107,7 @@ func HandleMessage(w http.ResponseWriter, req *http.Request, kp *pre.KeyPair, pp
 		return
 	}
 
-	plaintext, err := PREDecrypt(pp, kp.SK, &m)
+	plaintext, err := Decrypt(pp, kp.SK, &m)
 	if err != nil {
 		log.Printf("Failed to decrypt message: %v", err)
 		http.Error(w, "Failed to decrypt message", http.StatusInternalServerError)

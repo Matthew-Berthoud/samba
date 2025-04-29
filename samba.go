@@ -16,8 +16,8 @@ type SambaMessage struct {
 }
 
 type InstanceKeys struct {
-	PublicKey       pre.PublicKey       `json:"public_key"`
-	ReEncryptionKey pre.ReEncryptionKey `json:"re_encryption_key"`
+	PublicKey       *pre.PublicKey       `json:"public_key"`
+	ReEncryptionKey *pre.ReEncryptionKey `json:"re_encryption_key"`
 }
 
 type PublicKeyRequest struct {

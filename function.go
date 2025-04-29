@@ -11,9 +11,9 @@ import (
 )
 
 type SambaInstance struct {
-	id InstanceId
-	kp *pre.KeyPair
-	pp *pre.PublicParams
+	Id           InstanceId
+	KeyPair      *pre.KeyPair
+	PublicParams *pre.PublicParams
 }
 
 func (s *SambaInstance) genReEncryptionKey(w http.ResponseWriter, req *http.Request) {
@@ -32,41 +32,33 @@ func (s *SambaInstance) genReEncryptionKey(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	pk, err := DeSerializePublicKey(rkReq.PublicKeySerialzed)
+	m, err := GenReEncryptionKey(s.PublicParams, s.KeyPair.SK, &rkReq)
 	if err != nil {
-		http.Error(w, "Failed to deserialize public key", http.StatusBadRequest)
-		log.Printf("Failed to deserialize public key: %v", err)
-		return
-	}
-
-	rkAB := pre.ReEncryptionKeyGen(s.pp, s.kp.SK, &pk)
-	rks := SerializeReEncryptionKey(*rkAB)
-	response := ReEncryptionKeyMessage{
-		InstanceId:                rkReq.InstanceId,
-		ReEncryptionKeySerialized: rks,
+		http.Error(w, "Failed to generate re-encryption key", http.StatusInternalServerError)
+		log.Printf("Failed to generate re-encryption key: %v", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	if err := json.NewEncoder(w).Encode(m); err != nil {
 		log.Printf("Failed to encode response: %v", err)
 	}
 }
 
 func (s *SambaInstance) handleMessage(w http.ResponseWriter, req *http.Request) {
-	HandleMessage(w, req, s.kp, s.pp)
+	HandleMessage(w, req, s.KeyPair, s.PublicParams)
 }
 
 func (s *SambaInstance) port() string {
 	re := regexp.MustCompile(`:\d+`)
-	return re.FindString(string(s.id))
+	return re.FindString(string(s.Id))
 }
 
 func (s *SambaInstance) Boot(selfId, proxyId InstanceId) {
-	s.id = selfId
-	s.pp = FetchPublicParams(proxyId)
-	s.kp = pre.KeyGen(s.pp)
+	s.Id = selfId
+	s.PublicParams = FetchPublicParams(proxyId)
+	s.KeyPair = pre.KeyGen(s.PublicParams)
 
-	RegisterPublicKey(proxyId, selfId, s.kp.PK)
+	RegisterPublicKey(proxyId, selfId, s.KeyPair.PK)
 
 	http.HandleFunc("/requestReEncryptionKey", s.genReEncryptionKey)
 	http.HandleFunc("/message", s.handleMessage)

@@ -13,17 +13,19 @@ import (
 	"github.com/etclab/pre"
 )
 
+const FUNCTION_ID FunctionId = 123
+
 type SambaProxy struct {
-	pp              *pre.PublicParams
-	instances       []InstanceId
-	keys            map[InstanceId]InstanceKeys
-	functionLeaders map[FunctionId]InstanceId
+	pp                *pre.PublicParams
+	functionInstances map[FunctionId][]InstanceId
+	instanceKeys      map[InstanceId]InstanceKeys
+	functionLeaders   map[FunctionId]InstanceId
 }
 
 func (s *SambaProxy) recvPublicKey(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
-	var pks PublicKeySerialized
+	pks := new(PublicKeySerialized)
 	err := json.NewDecoder(req.Body).Decode(&pks)
 	if err != nil {
 		log.Printf("Failed to decode public key: %v", err)
@@ -31,7 +33,7 @@ func (s *SambaProxy) recvPublicKey(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	pk, err := DeSerializePublicKey(pks)
+	pk, err := pks.DeSerialize()
 	if err != nil {
 		log.Printf("Failed to deserialize public key: %v", err)
 		http.Error(w, "Failed to deserialize public key", http.StatusBadRequest)
@@ -46,15 +48,16 @@ func (s *SambaProxy) recvPublicKey(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *SambaProxy) setPublicKey(instanceId InstanceId, pk pre.PublicKey) {
-	s.keys[instanceId] = InstanceKeys{
+func (s *SambaProxy) setPublicKey(instanceId InstanceId, pk *pre.PublicKey) {
+	s.instanceKeys[instanceId] = InstanceKeys{
 		PublicKey:       pk,
-		ReEncryptionKey: s.keys[instanceId].ReEncryptionKey, // Preserve existing re-encryption key if resetting
+		ReEncryptionKey: s.instanceKeys[instanceId].ReEncryptionKey, // Preserve existing re-encryption key if resetting
 	}
 }
 
 func (s *SambaProxy) sendPublicParams(w http.ResponseWriter, req *http.Request) {
-	pps, err := SerializePublicParams(*s.pp)
+	pps := new(PublicParamsSerialized)
+	err := pps.Serialize(s.pp)
 	if err != nil {
 		http.Error(w, "Failed to serialize fields in public parameters", http.StatusInternalServerError)
 		log.Printf("Failed to serialize fields in public parameters")
@@ -69,45 +72,42 @@ func (s *SambaProxy) sendPublicParams(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (s *SambaProxy) getReEncryptionKey(a, b InstanceId) (pre.ReEncryptionKey, error) {
-	if s.keys[b].ReEncryptionKey != (pre.ReEncryptionKey{}) {
-		return s.keys[b].ReEncryptionKey, nil
-	}
-
-	pks := SerializePublicKey(s.keys[b].PublicKey)
-
+func (s *SambaProxy) requestReEncryptionKey(a, b InstanceId) (*pre.ReEncryptionKey, error) {
+	pks := new(PublicKeySerialized)
+	pks.Serialize(s.instanceKeys[b].PublicKey)
 	req := ReEncryptionKeyRequest{
 		InstanceId:         b,
-		PublicKeySerialzed: pks,
+		PublicKeySerialzed: *pks,
 	}
+
 	body, err := json.Marshal(req)
 	if err != nil {
-		return pre.ReEncryptionKey{}, err
+		return nil, err
 	}
 
 	resp, err := http.Post(string(a)+"/requestReEncryptionKey", "application/json", bytes.NewReader(body))
 	if err != nil {
-		return pre.ReEncryptionKey{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return pre.ReEncryptionKey{}, fmt.Errorf("requestReEncryptionKey failed with status %d", resp.StatusCode)
+		return nil, err
 	}
 
 	var rkMsg ReEncryptionKeyMessage
 	if err := json.NewDecoder(resp.Body).Decode(&rkMsg); err != nil {
-		return pre.ReEncryptionKey{}, err
+		return nil, err
 	}
 
-	rk, err := DeSerializeReEncryptionKey(rkMsg.ReEncryptionKeySerialized)
+	rk, err := rkMsg.ReEncryptionKeySerialized.DeSerialize()
 	if err != nil {
-		return pre.ReEncryptionKey{}, err
+		return nil, err
 	}
 
-	instanceKeys := s.keys[rkMsg.InstanceId]
+	instanceKeys := s.instanceKeys[rkMsg.InstanceId]
 	instanceKeys.ReEncryptionKey = rk
-	s.keys[rkMsg.InstanceId] = instanceKeys
+	s.instanceKeys[rkMsg.InstanceId] = instanceKeys
 	return rk, nil
 }
 
@@ -117,7 +117,7 @@ func (s *SambaProxy) getOrSetLeader(functionId FunctionId) (InstanceId, error) {
 	}
 	if s.functionLeaders[functionId] == "" {
 		// in the real implementation there would be some better way to select a leader
-		s.functionLeaders[functionId] = s.instances[0]
+		s.functionLeaders[functionId] = s.functionInstances[FUNCTION_ID][0]
 		log.Println("setting alice to function leader")
 	}
 	leaderId := s.functionLeaders[functionId]
@@ -125,36 +125,26 @@ func (s *SambaProxy) getOrSetLeader(functionId FunctionId) (InstanceId, error) {
 }
 
 func (s *SambaProxy) getAvailabileInstance(functionId FunctionId) InstanceId {
-	//return instances[0] // ALICE
-	return s.instances[1] // BOB
+	// return s.functionInstances[functionId][0] // ALICE
+	return s.functionInstances[functionId][1] // BOB
 }
 
 func (s *SambaProxy) reEncrypt(m1 *SambaMessage, leaderId, instanceId InstanceId) (*SambaMessage, error) {
-	rkAB, err := s.getReEncryptionKey(leaderId, instanceId)
+	rk := s.instanceKeys[instanceId].ReEncryptionKey
+	var err error
+	if rk == nil {
+		rk, err = s.requestReEncryptionKey(leaderId, instanceId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	m2, err := ReEncrypt(s.pp, rk, m1)
 	if err != nil {
 		return nil, err
 	}
 
-	ct1, err := DeSerializeCiphertext1(m1.WrappedKey1)
-	if err != nil {
-		return nil, err
-	}
-
-	ct2 := pre.ReEncrypt(s.pp, &rkAB, &ct1)
-
-	wk2, err := SerializeCiphertext2(*ct2)
-	if err != nil {
-		return nil, err
-	}
-
-	m2 := SambaMessage{
-		Target:        m1.Target,
-		IsReEncrypted: true,
-		WrappedKey2:   wk2,
-		Ciphertext:    m1.Ciphertext,
-	}
-
-	return &m2, nil
+	return m2, nil
 }
 
 func (s *SambaProxy) recvMessage(w http.ResponseWriter, req *http.Request) {
@@ -220,15 +210,16 @@ func (s *SambaProxy) handlePublicKeyRequest(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	leaderKeys, exists := s.keys[leaderId]
+	leaderKeys, exists := s.instanceKeys[leaderId]
 	if !exists {
 		http.Error(w, "Function leader has no public key", http.StatusInternalServerError)
 		log.Printf("Function leader has no public key for leaderId %s", leaderId)
 		return
 	}
 
-	msg := SerializePublicKey(leaderKeys.PublicKey)
-	jsonData, err := json.Marshal(msg)
+	pks := new(PublicKeySerialized)
+	pks.Serialize(leaderKeys.PublicKey)
+	jsonData, err := json.Marshal(pks)
 	if err != nil {
 		http.Error(w, "Failed to encode public key", http.StatusInternalServerError)
 		log.Printf("Error marshaling public key message: %v", err)
@@ -244,9 +235,10 @@ func (s *SambaProxy) handlePublicKeyRequest(w http.ResponseWriter, req *http.Req
 
 func (s *SambaProxy) Boot(instanceIds []InstanceId) {
 	s.pp = pre.NewPublicParams()
-	s.instances = instanceIds
+	s.functionInstances = make(map[FunctionId][]InstanceId)
+	s.functionInstances[FUNCTION_ID] = instanceIds
 	s.functionLeaders = make(map[FunctionId]InstanceId)
-	s.keys = make(map[InstanceId]InstanceKeys)
+	s.instanceKeys = make(map[InstanceId]InstanceKeys)
 
 	http.HandleFunc("/publicParams", s.sendPublicParams)
 	http.HandleFunc("/registerPublicKey", s.recvPublicKey)

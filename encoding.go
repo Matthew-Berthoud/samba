@@ -10,32 +10,29 @@ type PublicKeySerialized struct {
 	G2toA []byte `json:"g2_to_a"`
 }
 
-func SerializePublicKey(pk pre.PublicKey) PublicKeySerialized {
-	return PublicKeySerialized{
-		G1toA: pk.G1toA.Bytes(),
-		G2toA: pk.G2toA.Bytes(),
-	}
+func (p *PublicKeySerialized) Serialize(pk *pre.PublicKey) {
+	p.G1toA = pk.G1toA.Bytes()
+	p.G2toA = pk.G2toA.Bytes()
 }
 
-func DeSerializePublicKey(pks PublicKeySerialized) (pre.PublicKey, error) {
+func (p PublicKeySerialized) DeSerialize() (*pre.PublicKey, error) {
 	g1 := &bls.G1{}
 	g2 := &bls.G2{}
 
-	err := g1.SetBytes(pks.G1toA)
+	err := g1.SetBytes(p.G1toA)
 	if err != nil {
-		return pre.PublicKey{}, err
+		return nil, err
 	}
 
-	err = g2.SetBytes(pks.G2toA)
+	err = g2.SetBytes(p.G2toA)
 	if err != nil {
-		return pre.PublicKey{}, err
+		return nil, err
 	}
 
-	pk := pre.PublicKey{
+	return &pre.PublicKey{
 		G1toA: g1,
 		G2toA: g2,
-	}
-	return pk, nil
+	}, nil
 }
 
 type PublicParamsSerialized struct {
@@ -44,46 +41,43 @@ type PublicParamsSerialized struct {
 	Z  []byte `json:"z"`
 }
 
-func SerializePublicParams(pp pre.PublicParams) (PublicParamsSerialized, error) {
+func (p *PublicParamsSerialized) Serialize(pp *pre.PublicParams) error {
 	z, err := pp.Z.MarshalBinary()
 	if err != nil {
-		return PublicParamsSerialized{}, err
+		return err
 	}
 
-	pps := PublicParamsSerialized{
-		G1: pp.G1.Bytes(),
-		G2: pp.G2.Bytes(),
-		Z:  z,
-	}
-	return pps, err
+	p.G1 = pp.G1.Bytes()
+	p.G2 = pp.G2.Bytes()
+	p.Z = z
+	return err
 }
 
-func DeSerializePublicParams(pps PublicParamsSerialized) (pre.PublicParams, error) {
+func (p PublicParamsSerialized) DeSerialize() (*pre.PublicParams, error) {
 	g1 := &bls.G1{}
 	g2 := &bls.G2{}
 	z := &bls.Gt{}
 
-	err := g1.SetBytes(pps.G1)
+	err := g1.SetBytes(p.G1)
 	if err != nil {
-		return pre.PublicParams{}, err
+		return nil, err
 	}
 
-	err = g2.SetBytes(pps.G2)
+	err = g2.SetBytes(p.G2)
 	if err != nil {
-		return pre.PublicParams{}, err
+		return nil, err
 	}
 
-	err = z.UnmarshalBinary(pps.Z)
+	err = z.UnmarshalBinary(p.Z)
 	if err != nil {
-		return pre.PublicParams{}, err
+		return nil, err
 	}
 
-	pp := pre.PublicParams{
+	return &pre.PublicParams{
 		G1: g1,
 		G2: g2,
 		Z:  z,
-	}
-	return pp, nil
+	}, nil
 }
 
 type Ciphertext1Serialized struct {
@@ -91,40 +85,34 @@ type Ciphertext1Serialized struct {
 	Beta  []byte
 }
 
-func SerializeCiphertext1(ct1 pre.Ciphertext1) (Ciphertext1Serialized, error) {
+func (c *Ciphertext1Serialized) Serialize(ct1 *pre.Ciphertext1) error {
 	alpha, err := ct1.Alpha.MarshalBinary()
 	if err != nil {
-		return Ciphertext1Serialized{}, err
+		return err
 	}
-	beta := ct1.Beta.Bytes()
-
-	ct1s := Ciphertext1Serialized{
-		Alpha: alpha,
-		Beta:  beta,
-	}
-
-	return ct1s, nil
+	c.Alpha = alpha
+	c.Beta = ct1.Beta.Bytes()
+	return nil
 }
 
-func DeSerializeCiphertext1(ct1s Ciphertext1Serialized) (pre.Ciphertext1, error) {
+func (c Ciphertext1Serialized) DeSerialize() (*pre.Ciphertext1, error) {
 	alpha := &bls.Gt{}
 	beta := &bls.G1{}
 
-	err := alpha.UnmarshalBinary(ct1s.Alpha)
+	err := alpha.UnmarshalBinary(c.Alpha)
 	if err != nil {
-		return pre.Ciphertext1{}, err
+		return nil, err
 	}
 
-	err = beta.SetBytes(ct1s.Beta)
+	err = beta.SetBytes(c.Beta)
 	if err != nil {
-		return pre.Ciphertext1{}, err
+		return nil, err
 	}
 
-	ct1 := pre.Ciphertext1{
+	return &pre.Ciphertext1{
 		Alpha: alpha,
 		Beta:  beta,
-	}
-	return ct1, nil
+	}, nil
 }
 
 type Ciphertext2Serialized struct {
@@ -132,64 +120,56 @@ type Ciphertext2Serialized struct {
 	Beta  []byte
 }
 
-func SerializeCiphertext2(ct2 pre.Ciphertext2) (Ciphertext2Serialized, error) {
+func (c *Ciphertext2Serialized) Serialize(ct2 *pre.Ciphertext2) error {
 	alpha, err := ct2.Alpha.MarshalBinary()
 	if err != nil {
-		return Ciphertext2Serialized{}, err
+		return err
 	}
 	beta, err := ct2.Beta.MarshalBinary()
 	if err != nil {
-		return Ciphertext2Serialized{}, err
+		return err
 	}
-
-	ct2s := Ciphertext2Serialized{
-		Alpha: alpha,
-		Beta:  beta,
-	}
-
-	return ct2s, nil
+	c.Alpha = alpha
+	c.Beta = beta
+	return nil
 }
 
-func DeSerializeCiphertext2(ct2s Ciphertext2Serialized) (pre.Ciphertext2, error) {
+func (c Ciphertext2Serialized) DeSerialize() (*pre.Ciphertext2, error) {
 	alpha := &bls.Gt{}
 	beta := &bls.Gt{}
 
-	err := alpha.UnmarshalBinary(ct2s.Alpha)
+	err := alpha.UnmarshalBinary(c.Alpha)
 	if err != nil {
-		return pre.Ciphertext2{}, err
+		return nil, err
 	}
 
-	err = beta.UnmarshalBinary(ct2s.Beta)
+	err = beta.UnmarshalBinary(c.Beta)
 	if err != nil {
-		return pre.Ciphertext2{}, err
+		return nil, err
 	}
 
-	ct2 := pre.Ciphertext2{
+	return &pre.Ciphertext2{
 		Alpha: alpha,
 		Beta:  beta,
-	}
-	return ct2, nil
+	}, nil
 }
 
 type ReEncryptionKeySerialized struct {
 	RK []byte
 }
 
-func SerializeReEncryptionKey(rk pre.ReEncryptionKey) ReEncryptionKeySerialized {
-	return ReEncryptionKeySerialized{
-		RK: rk.RK.Bytes(),
-	}
+func (r *ReEncryptionKeySerialized) Serialize(rk *pre.ReEncryptionKey) {
+	r.RK = rk.RK.Bytes()
 }
 
-func DeSerializeReEncryptionKey(rks ReEncryptionKeySerialized) (pre.ReEncryptionKey, error) {
+func (r ReEncryptionKeySerialized) DeSerialize() (*pre.ReEncryptionKey, error) {
 	g2 := &bls.G2{}
-	err := g2.SetBytes(rks.RK)
+	err := g2.SetBytes(r.RK)
 	if err != nil {
-		return pre.ReEncryptionKey{}, err
+		return nil, err
 	}
 
-	rk := pre.ReEncryptionKey{
+	return &pre.ReEncryptionKey{
 		RK: g2,
-	}
-	return rk, nil
+	}, nil
 }
