@@ -58,7 +58,61 @@ func BenchmarkDecrypt1(b *testing.B) {
 	}
 }
 
-func BenchmarkPREDecrypt2(b *testing.B) {
+func BenchmarkGenReEncryptionKey(b *testing.B) {
+	// Build RK request
+	pks := new(PublicKeySerialized)
+	pks.Serialize(bob.KeyPair.PK)
+	rkReq := ReEncryptionKeyRequest{
+		InstanceId:         alice.Id,
+		PublicKeySerialzed: *pks,
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		rkMsg, err := GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
+		if err != nil {
+			b.Fatal(err)
+		}
+		blackhole = rkMsg
+	}
+}
+
+func BenchmarkReEncrypt(b *testing.B) {
+	m, err := Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	// Build RK request
+	pks := new(PublicKeySerialized)
+	pks.Serialize(bob.KeyPair.PK)
+	rkReq := ReEncryptionKeyRequest{
+		InstanceId:         alice.Id,
+		PublicKeySerialzed: *pks,
+	}
+
+	// Get RK
+	rkMsg, err := GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
+	if err != nil {
+		b.Fatal(err)
+	}
+	rkAB, err := rkMsg.ReEncryptionKeySerialized.DeSerialize()
+	if err != nil {
+		b.Fatal(err)
+
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		m2, err := ReEncrypt(pp, rkAB, m)
+		if err != nil {
+			b.Fatal(err)
+		}
+		blackhole = m2
+	}
+}
+
+func BenchmarkDecrypt2(b *testing.B) {
 	m, err := Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
 	if err != nil {
 		b.Fatal(err)
@@ -85,6 +139,9 @@ func BenchmarkPREDecrypt2(b *testing.B) {
 
 	// ReEncrypt
 	m2, err := ReEncrypt(pp, rkAB, m)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	b.ResetTimer()
 	for b.Loop() {
