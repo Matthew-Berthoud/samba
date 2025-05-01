@@ -1,8 +1,0 @@
-method,ms_per_op
-Encrypt,3.119
-Decrypt1,1.821
-GenReEncryptionKey,0.772
-ReEncrypt,1.257
-Decrypt2,1.040
-EncryptRSA,0.030
-DecryptRSA,1.751
