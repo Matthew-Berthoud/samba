@@ -1,0 +1,13 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/etclab/samba
+cpu: Apple M1
+BenchmarkEncrypt-8              	     384	   3119321 ns/op
+BenchmarkDecrypt1-8             	     660	   1821088 ns/op
+BenchmarkGenReEncryptionKey-8   	    1549	    772138 ns/op
+BenchmarkReEncrypt-8            	     954	   1257438 ns/op
+BenchmarkDecrypt2-8             	    1154	   1039514 ns/op
+BenchmarkEncryptRSA-8           	   40069	     29883 ns/op
+BenchmarkDecryptRSA-8           	     685	   1751226 ns/op
+PASS
+ok  	github.com/etclab/samba	8.985s

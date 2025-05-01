@@ -1,8 +1,11 @@
 csv_file="benchmark-results.csv"
 txt_file="benchmark-results.txt"
 
-go test -bench=. > "$txt_file"
+cd ../
+go test -bench=. > "evaluation/$txt_file"
+cd evaluation
 echo "Raw output written to $txt_file"
+
 echo "method,ms_per_op" > "$csv_file"
 cat benchmark-results.txt | awk '/ns\/op/ { 
     gsub(/^Benchmark/, "", $1);    # Remove "Benchmark" from the start
