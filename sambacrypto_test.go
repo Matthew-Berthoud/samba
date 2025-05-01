@@ -183,7 +183,7 @@ func BenchmarkDecrypt2(b *testing.B) {
 func BenchmarkEncryptRSA(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
-		m, err := sambaRSA.Encrypt(pp, alicePK, []byte(PLAINTEXT), FunctionId(1))
+		m, err := sambaRSA.Encrypt(nil, alicePK, []byte(PLAINTEXT), FunctionId(1))
 		if err != nil {
 			b.Fatal(err)
 		}
