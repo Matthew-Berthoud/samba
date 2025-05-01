@@ -1,15 +1,21 @@
 package samba
 
 import (
+	"fmt"
+
 	bls "github.com/cloudflare/circl/ecc/bls12381"
 	"github.com/etclab/pre"
 )
 
 type SambaPRE struct{}
 
-func (s SambaPRE) Encrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []byte, functionId FunctionId) (*SambaMessage, error) {
+func (s SambaPRE) Encrypt(pp *pre.PublicParams, pk any, plaintext []byte, functionId FunctionId) (*SambaMessage, error) {
+	pkPRE, ok := pk.(*pre.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("pk is not a proxy re-encryption PublicKey")
+	}
 	m := pre.RandomGt()
-	ct1 := pre.Encrypt(pp, m, pk)
+	ct1 := pre.Encrypt(pp, m, pkPRE)
 	key := pre.KdfGtToAes256(m)
 	ct := AESGCMEncrypt(key, plaintext)
 
@@ -27,7 +33,12 @@ func (s SambaPRE) Encrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []b
 	}, nil
 }
 
-func (s SambaPRE) Decrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessage) ([]byte, error) {
+func (s SambaPRE) Decrypt(pp *pre.PublicParams, sk any, m *SambaMessage) ([]byte, error) {
+	skPRE, ok := sk.(*pre.SecretKey)
+	if !ok {
+		return nil, fmt.Errorf("pk is not a proxy re-encryption SecretKey")
+	}
+
 	var gt *bls.Gt
 
 	if m.IsReEncrypted {
@@ -35,13 +46,13 @@ func (s SambaPRE) Decrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessa
 		if err != nil {
 			return nil, err
 		}
-		gt = pre.Decrypt2(pp, ct2, sk)
+		gt = pre.Decrypt2(pp, ct2, skPRE)
 	} else {
 		ct1, err := m.WrappedKey1.DeSerialize()
 		if err != nil {
 			return nil, err
 		}
-		gt = pre.Decrypt1(pp, ct1, sk)
+		gt = pre.Decrypt1(pp, ct1, skPRE)
 	}
 
 	key := pre.KdfGtToAes256(gt)
