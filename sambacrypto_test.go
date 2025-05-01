@@ -1,6 +1,8 @@
 package samba
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"os"
 	"testing"
 
@@ -14,8 +16,16 @@ var pp *pre.PublicParams
 var alice *SambaInstance
 var bob *SambaInstance
 var sambaPRE *SambaPRE
+var sambaRSA *SambaRSA
+var aliceSK *rsa.PrivateKey
+var alicePK *rsa.PublicKey
+var bobSK *rsa.PrivateKey
+var bobPK *rsa.PublicKey
 
 func TestMain(m *testing.M) {
+	var err error
+	// PRE setup
+	sambaPRE = new(SambaPRE)
 	pp = pre.NewPublicParams()
 
 	alice = &SambaInstance{
@@ -28,8 +38,22 @@ func TestMain(m *testing.M) {
 		Id:      "bob",
 	}
 
-	sambaPRE = new(SambaPRE)
+	// RSA setup
+	sambaRSA = new(SambaRSA)
 
+	aliceSK, err = rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		panic(err)
+	}
+	alicePK = &aliceSK.PublicKey
+
+	bobSK, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		panic(err)
+	}
+	bobPK = &bobSK.PublicKey
+
+	// Run tests
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }
@@ -153,5 +177,31 @@ func BenchmarkDecrypt2(b *testing.B) {
 			b.Fatal(err)
 		}
 		blackhole = plaintext
+	}
+}
+
+func BenchmarkEncryptRSA(b *testing.B) {
+	b.ResetTimer()
+	for b.Loop() {
+		m, err := sambaRSA.Encrypt(pp, alicePK, []byte(PLAINTEXT), FunctionId(1))
+		if err != nil {
+			b.Fatal(err)
+		}
+		blackhole = m
+	}
+}
+
+func BenchmarkDecryptRSA(b *testing.B) {
+	m, err := sambaRSA.Encrypt(nil, alicePK, []byte(PLAINTEXT), FunctionId(1))
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for b.Loop() {
+		pt, err := sambaRSA.Decrypt(nil, aliceSK, m)
+		if err != nil {
+			b.Fatal(err)
+		}
+		blackhole = pt
 	}
 }
