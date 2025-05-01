@@ -20,6 +20,7 @@ type SambaProxy struct {
 	functionInstances map[FunctionId][]InstanceId
 	instanceKeys      map[InstanceId]InstanceKeys
 	functionLeaders   map[FunctionId]InstanceId
+	Crypto            SambaCrypto
 }
 
 func (s *SambaProxy) recvPublicKey(w http.ResponseWriter, req *http.Request) {
@@ -139,7 +140,7 @@ func (s *SambaProxy) reEncrypt(m1 *SambaMessage, leaderId, instanceId InstanceId
 		}
 	}
 
-	m2, err := ReEncrypt(s.pp, rk, m1)
+	m2, err := s.Crypto.ReEncrypt(s.pp, rk, m1)
 	if err != nil {
 		return nil, err
 	}
@@ -233,12 +234,13 @@ func (s *SambaProxy) handlePublicKeyRequest(w http.ResponseWriter, req *http.Req
 	}
 }
 
-func (s *SambaProxy) Boot(instanceIds []InstanceId) {
+func (s *SambaProxy) Boot(instanceIds []InstanceId, c SambaCrypto) {
 	s.pp = pre.NewPublicParams()
 	s.functionInstances = make(map[FunctionId][]InstanceId)
 	s.functionInstances[FUNCTION_ID] = instanceIds
 	s.functionLeaders = make(map[FunctionId]InstanceId)
 	s.instanceKeys = make(map[InstanceId]InstanceKeys)
+	s.Crypto = c
 
 	http.HandleFunc("/publicParams", s.sendPublicParams)
 	http.HandleFunc("/registerPublicKey", s.recvPublicKey)

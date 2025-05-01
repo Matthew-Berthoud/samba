@@ -91,7 +91,50 @@ func SendMessage(m *SambaMessage, instanceId InstanceId) (response *http.Respons
 	return resp, nil
 }
 
-func HandleMessage(w http.ResponseWriter, req *http.Request, kp *pre.KeyPair, pp *pre.PublicParams) {
+func EncryptAndSend(proxyId InstanceId, functionId FunctionId, plaintext []byte, c SambaCrypto) ([]byte, error) {
+	// // request public params from proxy
+	// pp := samba.FetchPublicParams(proxyId)
+
+	// // request function leader's public key from proxy
+	// alicePk := samba.FetchPublicKey(proxyId, FUNCTION_ID)
+
+	// req, err := samba.Encrypt(pp, alicePk, plaintext, FUNCTION_ID)
+	// if err != nil {
+	// 	log.Fatalf("Proxy re-encryption failed: %v", err)
+	// }
+
+	// resp, err := samba.SendMessage(req, proxyId)
+	// if err != nil {
+	// 	log.Fatalf("Sending to proxy failed: %v", err)
+	// }
+
+	pp := FetchPublicParams(proxyId)
+	pk := FetchPublicKey(proxyId, functionId)
+
+	m, err := c.Encrypt(pp, pk, plaintext, functionId)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := SendMessage(m, proxyId)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Samba Request failed with status: %v", resp.Status)
+	}
+
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func HandleMessage(w http.ResponseWriter, req *http.Request, kp *pre.KeyPair, pp *pre.PublicParams, c SambaCrypto) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -107,7 +150,7 @@ func HandleMessage(w http.ResponseWriter, req *http.Request, kp *pre.KeyPair, pp
 		return
 	}
 
-	plaintext, err := Decrypt(pp, kp.SK, &m)
+	plaintext, err := c.Decrypt(pp, kp.SK, &m)
 	if err != nil {
 		log.Printf("Failed to decrypt message: %v", err)
 		http.Error(w, "Failed to decrypt message", http.StatusInternalServerError)

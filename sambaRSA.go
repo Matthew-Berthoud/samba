@@ -5,9 +5,9 @@ import (
 	"github.com/etclab/pre"
 )
 
-type SambaPRE struct{}
+type SambaRSA struct{}
 
-func (s SambaPRE) Encrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []byte, functionId FunctionId) (*SambaMessage, error) {
+func (s SambaRSA) Encrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []byte, functionId FunctionId) (*SambaMessage, error) {
 	m := pre.RandomGt()
 	ct1 := pre.Encrypt(pp, m, pk)
 	key := pre.KdfGtToAes256(m)
@@ -27,7 +27,7 @@ func (s SambaPRE) Encrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []b
 	}, nil
 }
 
-func (s SambaPRE) Decrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessage) ([]byte, error) {
+func (s SambaRSA) Decrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessage) ([]byte, error) {
 	var gt *bls.Gt
 
 	if m.IsReEncrypted {
@@ -53,7 +53,7 @@ func (s SambaPRE) Decrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessa
 	return plaintext, nil
 }
 
-func (s SambaPRE) ReEncrypt(pp *pre.PublicParams, rk *pre.ReEncryptionKey, m *SambaMessage) (*SambaMessage, error) {
+func (s SambaRSA) ReEncrypt(pp *pre.PublicParams, rk *pre.ReEncryptionKey, m *SambaMessage) (*SambaMessage, error) {
 	ct1, err := m.WrappedKey1.DeSerialize()
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (s SambaPRE) ReEncrypt(pp *pre.PublicParams, rk *pre.ReEncryptionKey, m *Sa
 	}, nil
 }
 
-func (s SambaPRE) GenReEncryptionKey(pp *pre.PublicParams, sk *pre.SecretKey, req *ReEncryptionKeyRequest) (*ReEncryptionKeyMessage, error) {
+func (s SambaRSA) GenReEncryptionKey(pp *pre.PublicParams, sk *pre.SecretKey, req *ReEncryptionKeyRequest) (*ReEncryptionKeyMessage, error) {
 	pk, err := req.PublicKeySerialzed.DeSerialize()
 	if err != nil {
 		return nil, err

@@ -33,3 +33,10 @@ type ReEncryptionKeyMessage struct {
 	InstanceId                InstanceId                `json:"instance_id"`
 	ReEncryptionKeySerialized ReEncryptionKeySerialized `json:"re_encryption_key_serialized"`
 }
+
+type SambaCrypto interface {
+	Encrypt(pp *pre.PublicParams, pk *pre.PublicKey, plaintext []byte, functionId FunctionId) (*SambaMessage, error)
+	Decrypt(pp *pre.PublicParams, sk *pre.SecretKey, m *SambaMessage) ([]byte, error)
+	ReEncrypt(pp *pre.PublicParams, rk *pre.ReEncryptionKey, m *SambaMessage) (*SambaMessage, error)
+	GenReEncryptionKey(pp *pre.PublicParams, sk *pre.SecretKey, req *ReEncryptionKeyRequest) (*ReEncryptionKeyMessage, error)
+}

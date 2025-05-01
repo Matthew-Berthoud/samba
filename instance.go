@@ -14,6 +14,7 @@ type SambaInstance struct {
 	Id           InstanceId
 	KeyPair      *pre.KeyPair
 	PublicParams *pre.PublicParams
+	Crypto       SambaCrypto
 }
 
 func (s *SambaInstance) genReEncryptionKey(w http.ResponseWriter, req *http.Request) {
@@ -32,7 +33,7 @@ func (s *SambaInstance) genReEncryptionKey(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	m, err := GenReEncryptionKey(s.PublicParams, s.KeyPair.SK, &rkReq)
+	m, err := s.Crypto.GenReEncryptionKey(s.PublicParams, s.KeyPair.SK, &rkReq)
 	if err != nil {
 		http.Error(w, "Failed to generate re-encryption key", http.StatusInternalServerError)
 		log.Printf("Failed to generate re-encryption key: %v", err)
@@ -45,7 +46,7 @@ func (s *SambaInstance) genReEncryptionKey(w http.ResponseWriter, req *http.Requ
 }
 
 func (s *SambaInstance) handleMessage(w http.ResponseWriter, req *http.Request) {
-	HandleMessage(w, req, s.KeyPair, s.PublicParams)
+	HandleMessage(w, req, s.KeyPair, s.PublicParams, s.Crypto)
 }
 
 func (s *SambaInstance) port() string {
@@ -53,10 +54,11 @@ func (s *SambaInstance) port() string {
 	return re.FindString(string(s.Id))
 }
 
-func (s *SambaInstance) Boot(selfId, proxyId InstanceId) {
+func (s *SambaInstance) Boot(selfId, proxyId InstanceId, c SambaCrypto) {
 	s.Id = selfId
 	s.PublicParams = FetchPublicParams(proxyId)
 	s.KeyPair = pre.KeyGen(s.PublicParams)
+	s.Crypto = c
 
 	RegisterPublicKey(proxyId, selfId, s.KeyPair.PK)
 
@@ -64,6 +66,6 @@ func (s *SambaInstance) Boot(selfId, proxyId InstanceId) {
 	http.HandleFunc("/message", s.handleMessage)
 
 	port := s.port()
-	log.Println("Alice service running on " + port)
+	log.Println("Instance running on " + port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }

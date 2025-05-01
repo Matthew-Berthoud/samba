@@ -13,6 +13,7 @@ var blackhole any
 var pp *pre.PublicParams
 var alice *SambaInstance
 var bob *SambaInstance
+var sambaPRE *SambaPRE
 
 func TestMain(m *testing.M) {
 	pp = pre.NewPublicParams()
@@ -27,6 +28,8 @@ func TestMain(m *testing.M) {
 		Id:      "bob",
 	}
 
+	sambaPRE = new(SambaPRE)
+
 	exitVal := m.Run()
 	os.Exit(exitVal)
 }
@@ -34,7 +37,7 @@ func TestMain(m *testing.M) {
 func BenchmarkEncrypt(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
-		m, err := Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
+		m, err := sambaPRE.Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -43,14 +46,14 @@ func BenchmarkEncrypt(b *testing.B) {
 }
 
 func BenchmarkDecrypt1(b *testing.B) {
-	m, err := Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
+	m, err := sambaPRE.Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	b.ResetTimer()
 	for b.Loop() {
-		plaintext, err := Decrypt(pp, alice.KeyPair.SK, m)
+		plaintext, err := sambaPRE.Decrypt(pp, alice.KeyPair.SK, m)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -69,7 +72,7 @@ func BenchmarkGenReEncryptionKey(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		rkMsg, err := GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
+		rkMsg, err := sambaPRE.GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -78,7 +81,7 @@ func BenchmarkGenReEncryptionKey(b *testing.B) {
 }
 
 func BenchmarkReEncrypt(b *testing.B) {
-	m, err := Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
+	m, err := sambaPRE.Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -92,7 +95,7 @@ func BenchmarkReEncrypt(b *testing.B) {
 	}
 
 	// Get RK
-	rkMsg, err := GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
+	rkMsg, err := sambaPRE.GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -104,7 +107,7 @@ func BenchmarkReEncrypt(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		m2, err := ReEncrypt(pp, rkAB, m)
+		m2, err := sambaPRE.ReEncrypt(pp, rkAB, m)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -113,7 +116,7 @@ func BenchmarkReEncrypt(b *testing.B) {
 }
 
 func BenchmarkDecrypt2(b *testing.B) {
-	m, err := Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
+	m, err := sambaPRE.Encrypt(pp, alice.KeyPair.PK, []byte(PLAINTEXT), FunctionId(1))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -127,7 +130,7 @@ func BenchmarkDecrypt2(b *testing.B) {
 	}
 
 	// Get RK
-	rkMsg, err := GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
+	rkMsg, err := sambaPRE.GenReEncryptionKey(pp, alice.KeyPair.SK, &rkReq)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -138,14 +141,14 @@ func BenchmarkDecrypt2(b *testing.B) {
 	}
 
 	// ReEncrypt
-	m2, err := ReEncrypt(pp, rkAB, m)
+	m2, err := sambaPRE.ReEncrypt(pp, rkAB, m)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	b.ResetTimer()
 	for b.Loop() {
-		plaintext, err := Decrypt(pp, bob.KeyPair.SK, m2)
+		plaintext, err := sambaPRE.Decrypt(pp, bob.KeyPair.SK, m2)
 		if err != nil {
 			b.Fatal(err)
 		}
