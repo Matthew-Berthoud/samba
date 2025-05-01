@@ -1,4 +1,4 @@
-progs= example sender alice bob proxy
+progs= example sender alice bob proxy rsa
 
 all: $(progs)
 
